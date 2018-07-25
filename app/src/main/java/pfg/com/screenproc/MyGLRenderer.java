@@ -375,10 +375,11 @@ public class MyGLRenderer implements GLSurfaceView.Renderer {
         mHeight = height;
         // Z轴值-1到-10,但是默认Z是0，因此需要把Z平移到这个范围,否则看不到任何画像
         MatrixHelper.perspectiveM(projectionMatrix, 45, (float) width / (float) height, 1f, 10f);
-        // 单位矩阵，再沿着Z轴平移-2,
+        // 初始化单位矩阵
         Matrix.setIdentityM(modelMatrix, 0);
         //Matrix.translateM(modelMatrix, 0, 0f, 0f, -2f);
 
+        // 沿着Z轴平移-2.5f, 这样在-1到-10范围内所以画面就可见了。
         Matrix.translateM(modelMatrix, 0, 0f, 0f, -2.5f);
         // 沿着X轴旋转
         Matrix.rotateM(modelMatrix, 0, -60f, 1f, 0f, 0f);
