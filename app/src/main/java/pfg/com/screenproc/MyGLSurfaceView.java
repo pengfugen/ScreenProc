@@ -29,7 +29,9 @@ public class MyGLSurfaceView extends GLSurfaceView {
 
     private final static String TAG = MyGLSurfaceView.class.getSimpleName();
 
-    private final MyGLRenderer mRenderer;
+    // private final MyGLRenderer mRenderer;
+
+    private AirHockeyRenderer mAirHockeyRenderer;
 
     public MyGLSurfaceView(Context context) {
         super(context);
@@ -38,8 +40,9 @@ public class MyGLSurfaceView extends GLSurfaceView {
         setEGLContextClientVersion(3);
 
         // Set the Renderer for drawing on the GLSurfaceView
-        mRenderer = new MyGLRenderer(context);
-        setRenderer(mRenderer);
+        // mRenderer = new MyGLRenderer(context);
+        mAirHockeyRenderer = new AirHockeyRenderer(context);
+        setRenderer(mAirHockeyRenderer);
 
         // Render the view only when there is a change in the drawing data
         setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
@@ -50,8 +53,9 @@ public class MyGLSurfaceView extends GLSurfaceView {
         // Create an OpenGL ES 2.0 context.
         setEGLContextClientVersion(3);
         // Set the Renderer for drawing on the GLSurfaceView
-        mRenderer = new MyGLRenderer(context);
-        setRenderer(mRenderer);
+        // mRenderer = new MyGLRenderer(context);
+        mAirHockeyRenderer = new AirHockeyRenderer(context);
+        setRenderer(mAirHockeyRenderer);
 
         // Render the view only when there is a change in the drawing data
         setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
@@ -98,9 +102,9 @@ public class MyGLSurfaceView extends GLSurfaceView {
                     dy = dy * -1 ;
                 }
 
-                mRenderer.setAngle(
+                /*mRenderer.setAngle(
                         mRenderer.getAngle() +
-                        ((dx + dy) * TOUCH_SCALE_FACTOR));  // = 180.0f / 320
+                        ((dx + dy) * TOUCH_SCALE_FACTOR));  // = 180.0f / 320*/
                 requestRender();
         }
 

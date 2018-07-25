@@ -6,6 +6,8 @@ import android.opengl.GLES30;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+
+import static pfg.com.screenproc.util.CheckGlError.checkGlError;
 import static pfg.com.screenproc.util.Constants.BYTES_PER_FLOAT;
 
 /**
@@ -25,7 +27,9 @@ public class VertexArray {
     public void setVertexAttribPointer(int dataOffset, int attributeLocation, int componentCount, int stride) {
         floatBuffer.position(dataOffset);
         GLES30.glVertexAttribPointer(attributeLocation, componentCount, GLES30.GL_FLOAT, false, stride, floatBuffer);
+        checkGlError("glVertexAttribPointer");
         GLES30.glEnableVertexAttribArray(attributeLocation);
+        checkGlError("glEnableVertexAttribArray");
         floatBuffer.position(0);
     }
 }

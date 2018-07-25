@@ -5,6 +5,7 @@ import android.opengl.GLES30;
 import pfg.com.screenproc.data.VertexArray;
 import pfg.com.screenproc.programs.TextureShaderProgram;
 
+import static pfg.com.screenproc.util.CheckGlError.checkGlError;
 import static pfg.com.screenproc.util.Constants.BYTES_PER_FLOAT;
 
 /**
@@ -20,11 +21,11 @@ public class Table {
       // Order of coordinates:X, Y, S, T
       // Triangle Fan
       0f,    0f, 0.5f, 0.5f,
-   -0.5f, -0.8f,   0f, 0.9f,
-    0.5f, -0.8f,   1f, 0.9f,
-    0.5f,  0.8f,   1f, 0.1f,
-   -0.5f,  0.8f,   0f, 0.1f,
-   -0.5f, -0.8f,   0f, 0.9f
+   -0.5f, -0.8f,   0f, 1f,
+    0.5f, -0.8f,   1f, 1f,
+    0.5f,  0.8f,   1f, 0f,
+   -0.5f,  0.8f,   0f, 0f,
+   -0.5f, -0.8f,   0f, 1f
     };
 
     private VertexArray vertexArray;
@@ -41,5 +42,6 @@ public class Table {
 
     public void draw() {
         GLES30.glDrawArrays(GLES30.GL_TRIANGLE_FAN, 0, 6);
+        checkGlError("glDrawArrays");
     }
 }

@@ -5,6 +5,8 @@ import android.opengl.GLES30;
 
 import pfg.com.screenproc.util.ShaderHelper;
 
+import static pfg.com.screenproc.util.CheckGlError.checkGlError;
+
 /**
  * Created by FPENG3 on 2018/7/24.
  */
@@ -16,7 +18,7 @@ public class ShaderProgram {
     protected static final String U_TEXTURE_UNIT = "u_TextureUnit";
 
     // Attribute constants
-    protected static final String A_POSITION = "a_Postion";
+    protected static final String A_POSITION = "a_Position";
     protected static final String A_COLOR = "a_Color";
     protected static final String A_TEXTURE_COORDINATES = "a_TextureCoordinates";
 
@@ -29,5 +31,6 @@ public class ShaderProgram {
 
     public void useProgram() {
         GLES30.glUseProgram(program);
+        checkGlError("glUseProgram");
     }
 }

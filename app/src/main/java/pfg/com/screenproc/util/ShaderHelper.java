@@ -3,6 +3,8 @@ import android.opengl.GLES30;
 
 import pfg.com.screenproc.MyLog;
 
+import static pfg.com.screenproc.util.CheckGlError.checkGlError;
+
 /**
  * Created by FPENG3 on 2018/7/17.
  */
@@ -22,13 +24,16 @@ public class ShaderHelper {
 
     private static int compileShader(int type, String shader) {
         int shaderid = GLES30.glCreateShader(type);
+        checkGlError("glCreateShader");
         GLES30.glShaderSource(shaderid, shader);
+        checkGlError("glShaderSource");
         GLES30.glCompileShader(shaderid);
+        checkGlError("glCompileShader");
 
         int []compileStatus = new int[1];
         GLES30.glGetShaderiv(shaderid, GLES30.GL_COMPILE_STATUS, compileStatus, 0);
 
-        if(shaderid == 0) {
+        if(compileStatus[0] == 0) {
             MyLog.loge(TAG, "compileShader failed type:"+type+", error info:"+GLES30.glGetShaderInfoLog(shaderid));
             GLES30.glDeleteShader(shaderid);
         } else {
@@ -40,15 +45,19 @@ public class ShaderHelper {
     public static int linkProgram(int vertexShaderId, int fragmentShaderId) {
         MyLog.logd(TAG, "linkProgram vertexShaderId:"+vertexShaderId+" fragmentShaderId:"+fragmentShaderId);
         int programId = GLES30.glCreateProgram();
+        checkGlError("glCreateProgram");
         GLES30.glAttachShader(programId, vertexShaderId);
+        checkGlError("glAttachShader");
         GLES30.glAttachShader(programId, fragmentShaderId);
+        checkGlError("glAttachShader");
         GLES30.glLinkProgram(programId);
+        checkGlError("glLinkProgram");
         int []linkStatus = new int[1];
         GLES30.glGetProgramiv(programId, GLES30.GL_LINK_STATUS, linkStatus, 0);
         if(linkStatus[0] == 0) {
             MyLog.loge(TAG, "linkProgram failed, error info:"+GLES30.glGetProgramInfoLog(programId));
         } else {
-            MyLog.logd(TAG, "linkProgram successful status:"+linkStatus[0]);
+            MyLog.logd(TAG, "linkProgram(programId=:"+programId+") successful status:"+linkStatus[0]);
         }
         return programId;
     }
