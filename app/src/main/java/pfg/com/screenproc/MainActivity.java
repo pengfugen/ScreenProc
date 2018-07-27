@@ -20,23 +20,35 @@ public class MainActivity extends Activity{
 
     final String TAG = "ScreenProc";
     MyGLSurfaceView mGLSurfaceView;
+    Button btn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         MyLog.logd(TAG, "onCreate");
-        /*setContentView(R.layout.activity_main_new);
-        mGLSurfaceView = (MyGLSurfaceView) findViewById(R.id.surface_view);*/
+        setContentView(R.layout.activity_main_new);
+        mGLSurfaceView = (MyGLSurfaceView) findViewById(R.id.surface_view);
         ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         ConfigurationInfo configurationInfo = activityManager.getDeviceConfigurationInfo();
         MyLog.logd(TAG, "The device supported opengl es version:"+configurationInfo.getGlEsVersion()+ " int value:"+configurationInfo.reqGlEsVersion);
-        if(configurationInfo.reqGlEsVersion >= 0x20000) {
+        /*if(configurationInfo.reqGlEsVersion >= 0x20000) {
             mGLSurfaceView = new MyGLSurfaceView(this);
             setContentView(mGLSurfaceView);
 
         } else {
             finish();
-        }
+        }*/
+
+        btn = (Button) findViewById(R.id.btn_go);
+        btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent();
+                intent.setClassName("pfg.com.screenproc", "pfg.com.screenproc.ScreenRecordActivity");
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            }
+        });
 
     }
 
