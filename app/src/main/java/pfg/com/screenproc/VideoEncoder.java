@@ -17,6 +17,7 @@
 package pfg.com.screenproc;
 
 import android.graphics.SurfaceTexture;
+import android.opengl.EGL14;
 import android.opengl.EGLContext;
 import android.opengl.GLES20;
 import android.os.Handler;
@@ -292,9 +293,13 @@ public class VideoEncoder implements Runnable {
         if (VERBOSE) MyLog.logd(TAG, "handleFrameAvailable tr=" + transform);
         mVideoEncoder.drainEncoder(false);
 
+        // 对SurfaceTexture的视频数据处理
         mFullScreen.drawFrame(mTextureId, transform);
         // 下述方法可不要
         // mInputWindowSurface.setPresentationTime(timestampNanos);
+        MyLog.logd(TAG, "handleFrameAvailable swapBuffers");
+        // 这里不是交到前台显示，而是给到mInputWindowSurface的显示缓存通知该帧buffer已经准备好了，drainEncoder可以去进行写入MP4
+        // 数据了。所以drainEncoder总是在swapBuffers后才发生
         mInputWindowSurface.swapBuffers();
     }
 
@@ -323,7 +328,6 @@ public class VideoEncoder implements Runnable {
         mEglCore = new EGLCore(sharedContext, EGLCore.FLAG_RECORDABLE | EGLCore.FLAG_TRY_GLES3);
         mInputWindowSurface = new WindowSurface(mEglCore, mVideoEncoder.getInputSurface(), true);
         mInputWindowSurface.makeCurrent();
-
         mFullScreen = new FullFrameRect(
                 new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
     }

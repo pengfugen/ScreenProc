@@ -54,12 +54,6 @@ public class VideoEncoderCore {
         }
     }
 
-    public void setTextureId(int textureId) {
-
-    }
-
-    //public void updateSharedContext()
-
     public Surface getInputSurface() {
         return inputSurface;
     }
@@ -127,7 +121,7 @@ public class VideoEncoderCore {
 
                     mediaMuxer.writeSampleData(mTrackIndex, encodedData, mBufferInfo);
                     {
-                        MyLog.logd(TAG, "sent " + mBufferInfo.size + " bytes to muxer, ts=" +
+                        MyLog.logd(TAG, "drainEncoder sent " + mBufferInfo.size + " bytes to muxer, ts=" +
                                 mBufferInfo.presentationTimeUs);
                     }
                 }
