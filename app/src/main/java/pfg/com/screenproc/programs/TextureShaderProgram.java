@@ -1,10 +1,9 @@
 package pfg.com.screenproc.programs;
 
 import android.content.Context;
-import android.nfc.Tag;
 import android.opengl.GLES30;
 
-import pfg.com.screenproc.MyLog;
+import pfg.com.screenproc.util.MyLog;
 
 import static pfg.com.screenproc.util.CheckGlError.checkGlError;
 

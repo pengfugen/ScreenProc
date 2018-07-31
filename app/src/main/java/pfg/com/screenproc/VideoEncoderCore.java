@@ -9,6 +9,8 @@ import java.nio.ByteBuffer;
 
 import android.media.MediaCodecInfo;
 
+import pfg.com.screenproc.util.MyLog;
+
 /**
  * Created by FPENG3 on 2018/7/16.
  */
@@ -23,7 +25,7 @@ public class VideoEncoderCore {
     private Surface inputSurface;
 
     private static final String MIME_TYPE = "video/avc";    // H.264 Advanced Video Coding
-    private static final int FRAME_RATE = 30;               // 30fps
+    private static final int FRAME_RATE = 15;               // 30fps
     private static final int BIT_RATE = 4000000;            // 4Mbps
     private static final int IFRAME_INTERVAL = 5;           // 5 seconds between I-frames
 
@@ -51,6 +53,12 @@ public class VideoEncoderCore {
             e.printStackTrace();
         }
     }
+
+    public void setTextureId(int textureId) {
+
+    }
+
+    //public void updateSharedContext()
 
     public Surface getInputSurface() {
         return inputSurface;

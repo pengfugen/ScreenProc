@@ -13,6 +13,7 @@ import pfg.com.screenproc.objects.Table;
 import pfg.com.screenproc.programs.ColorShaderProgram;
 import pfg.com.screenproc.programs.TextureShaderProgram;
 import pfg.com.screenproc.util.MatrixHelper;
+import pfg.com.screenproc.util.MyLog;
 import pfg.com.screenproc.util.TextureHelper;
 
 import static android.opengl.GLES30.*;

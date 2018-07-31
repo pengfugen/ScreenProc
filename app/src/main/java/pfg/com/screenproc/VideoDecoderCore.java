@@ -9,8 +9,9 @@ import android.os.Message;
 import android.view.Surface;
 
 import java.io.IOException;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
+
+import pfg.com.screenproc.util.MyLog;
 
 /**
  * Created by FPENG3 on 2018/7/26.

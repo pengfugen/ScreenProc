@@ -6,21 +6,18 @@ import android.content.pm.ConfigurationInfo;
 import android.os.Bundle;
 import android.content.Context;
 import android.content.Intent;
-import android.media.projection.MediaProjection;
-import android.media.projection.MediaProjectionManager;
-import android.os.Environment;
-import android.util.Log;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
+
+import pfg.com.screenproc.util.MyLog;
 
 
 public class MainActivity extends Activity{
 
     final String TAG = "ScreenProc";
     MyGLSurfaceView mGLSurfaceView;
-    Button btn;
+    Button btn_record;
+    Button btn_video;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,12 +36,23 @@ public class MainActivity extends Activity{
             finish();
         }*/
 
-        btn = (Button) findViewById(R.id.btn_go);
-        btn.setOnClickListener(new View.OnClickListener() {
+        btn_record = (Button) findViewById(R.id.btn_go_record);
+        btn_record.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent();
                 intent.setClassName("pfg.com.screenproc", "pfg.com.screenproc.ScreenRecordActivity");
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            }
+        });
+
+        btn_video = (Button) findViewById(R.id.btn_go_video);
+        btn_video.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent();
+                intent.setClassName("pfg.com.screenproc", "pfg.com.screenproc.OpenGLVideoPlayer");
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
             }

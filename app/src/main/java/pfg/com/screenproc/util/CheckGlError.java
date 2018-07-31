@@ -2,8 +2,6 @@ package pfg.com.screenproc.util;
 
 import android.opengl.GLES30;
 
-import pfg.com.screenproc.MyLog;
-
 /**
  * Created by FPENG3 on 2018/7/25.
  */

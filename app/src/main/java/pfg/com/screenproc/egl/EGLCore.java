@@ -1,4 +1,4 @@
-package pfg.com.screenproc;
+package pfg.com.screenproc.egl;
 
 import android.graphics.SurfaceTexture;
 import android.opengl.EGL14;
@@ -8,6 +8,8 @@ import android.opengl.EGLDisplay;
 import android.opengl.EGLExt;
 import android.opengl.EGLSurface;
 import android.view.Surface;
+
+import pfg.com.screenproc.util.MyLog;
 
 /**
  * Created by FPENG3 on 2018/7/26.
@@ -33,15 +35,16 @@ public class EGLCore {
     // Android-specific extension.
     private static final int EGL_RECORDABLE_ANDROID = 0x3142;
 
-    public EGLCore(int flags) {
+    public EGLCore(EGLContext sharedContext, int flags) {
         mEglDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY);
         int[] version = new int[2];
         if(!EGL14.eglInitialize(mEglDisplay, version, 0, version, 1)) {
             mEglDisplay = null;
             throw new RuntimeException("unable to initialize EGL14");
         }
-
-        EGLContext  sharedContext = EGL14.EGL_NO_CONTEXT;
+        if(sharedContext == null) {
+            sharedContext = EGL14.EGL_NO_CONTEXT;
+        }
 
         if((flags & FLAG_TRY_GLES3) != 0) {
             EGLConfig config = getConfig(flags, 3);
@@ -172,6 +175,10 @@ public class EGLCore {
         mEglDisplay = EGL14.EGL_NO_DISPLAY;
         mEglContext = EGL14.EGL_NO_CONTEXT;
         mEglConfig = null;
+    }
+
+    public void setPresentationTime(EGLSurface eglSurface, long nsecs) {
+        EGLExt.eglPresentationTimeANDROID(mEglDisplay, eglSurface, nsecs);
     }
 
     public void makeNothingCurrent() {

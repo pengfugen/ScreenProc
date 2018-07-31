@@ -1,5 +1,4 @@
-package pfg.com.screenproc;
-import pfg.com.screenproc.EGLCore;
+package pfg.com.screenproc.egl;
 
 import android.graphics.SurfaceTexture;
 import android.view.Surface;
@@ -11,12 +10,12 @@ import android.view.Surface;
 public class WindowSurface extends EGLSurfaceBase {
 
     boolean releaseSurface;
-    Surface mSurfacce;
+    Surface mSurface;
 
     public WindowSurface(EGLCore eglCore, Surface surface, boolean releaseSurface) {
         super(eglCore);
         createWindowSurface(surface);
-        mSurfacce = surface;
+        mSurface = surface;
     }
 
     public WindowSurface(EGLCore eglCore, SurfaceTexture surfaceTexture) {
@@ -26,11 +25,19 @@ public class WindowSurface extends EGLSurfaceBase {
 
     public void release() {
         releaseEglSurface();
-        if(mSurfacce != null) {
+        if(mSurface != null) {
             if(releaseSurface) {
-                mSurfacce.release();
+                mSurface.release();
             }
-            mSurfacce = null;
+            mSurface = null;
         }
+    }
+
+    public void recreate(EGLCore newEglCore) {
+        if (mSurface == null) {
+            throw new RuntimeException("not yet implemented for SurfaceTexture");
+        }
+        mEglCore = newEglCore;          // switch to new context
+        createWindowSurface(mSurface);  // create new surface
     }
 }

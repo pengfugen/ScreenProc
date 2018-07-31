@@ -1,4 +1,4 @@
-package pfg.com.screenproc;
+package pfg.com.screenproc.egl;
 
 import android.opengl.EGL14;
 import android.opengl.EGLSurface;
@@ -18,12 +18,12 @@ public abstract class EGLSurfaceBase {
         mEglCore = eglCore;
     }
 
-    protected EGLSurface createWindowSurface(Object surface) {
+    public EGLSurface createWindowSurface(Object surface) {
         mEglSurface = mEglCore.createWindowSurface(surface);
         return mEglSurface;
     }
 
-    protected void createOffscreenSurface(int width, int height) {
+    public void createOffscreenSurface(int width, int height) {
         if (mEglSurface != EGL14.EGL_NO_SURFACE) {
             throw new IllegalStateException("surface already created");
         }
@@ -32,36 +32,40 @@ public abstract class EGLSurfaceBase {
         mHeight = height;
     }
 
-    protected void makeCurrent() {
+    public void makeCurrent() {
         mEglCore.makeCurrent(mEglSurface);
     }
 
-    protected void makeCurrentReadFrom(EGLSurfaceBase readSurface) {
+    public void makeCurrentReadFrom(EGLSurfaceBase readSurface) {
         mEglCore.makeCurrent(mEglSurface, readSurface.mEglSurface);
     }
 
-    protected boolean swapBuffers() {
+    public boolean swapBuffers() {
         return mEglCore.swapBuffers(mEglSurface);
     }
 
-    protected int getWidth() {
+    public int getWidth() {
         if(mWidth < 0) {
             return mEglCore.querySurface(mEglSurface, EGL14.EGL_WIDTH);
         }
         return mWidth;
     }
 
-    protected int getHeight() {
+    public int getHeight() {
         if(mHeight < 0) {
             return mEglCore.querySurface(mEglSurface, EGL14.EGL_HEIGHT);
         }
         return mHeight;
     }
 
-    protected void releaseEglSurface() {
+    public void releaseEglSurface() {
         mEglCore.releaseSurface(mEglSurface);
         mEglSurface = EGL14.EGL_NO_SURFACE;
         mWidth = mHeight = -1;
+    }
+
+    public void setPresentationTime(long nsecs) {
+        mEglCore.setPresentationTime(mEglSurface, nsecs);
     }
 
 }

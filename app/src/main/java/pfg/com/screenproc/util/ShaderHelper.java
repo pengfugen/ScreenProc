@@ -1,8 +1,6 @@
 package pfg.com.screenproc.util;
 import android.opengl.GLES30;
 
-import pfg.com.screenproc.MyLog;
-
 import static pfg.com.screenproc.util.CheckGlError.checkGlError;
 
 /**

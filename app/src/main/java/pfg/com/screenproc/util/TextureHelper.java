@@ -5,7 +5,6 @@ import android.graphics.BitmapFactory;
 import android.opengl.GLES20;
 import android.opengl.GLES30;
 
-import pfg.com.screenproc.MyLog;
 import android.content.Context;
 import android.opengl.GLUtils;
 

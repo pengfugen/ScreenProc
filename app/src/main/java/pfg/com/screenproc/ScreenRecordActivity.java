@@ -1,13 +1,10 @@
 package pfg.com.screenproc;
 
 import android.app.Activity;
-import android.opengl.EGLSurface;
-import android.opengl.GLES20;
-import android.opengl.GLSurfaceView;
+import android.opengl.EGL14;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.view.Choreographer;
@@ -18,6 +15,10 @@ import android.view.View;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
+
+import pfg.com.screenproc.egl.EGLCore;
+import pfg.com.screenproc.egl.WindowSurface;
+import pfg.com.screenproc.util.MyLog;
 
 /**
  * Created by FPENG3 on 2018/7/26.
@@ -177,7 +178,7 @@ public class ScreenRecordActivity extends Activity implements SurfaceHolder.Call
         public void run() {
             Looper.prepare();
             mRenderHandler = new RenderHandler(this);
-            mEglCore = new EGLCore(EGLCore.FLAG_TRY_GLES3 | EGLCore.FLAG_RECORDABLE);
+            mEglCore = new EGLCore(EGL14.eglGetCurrentContext(), EGLCore.FLAG_TRY_GLES3 | EGLCore.FLAG_RECORDABLE);
 
 
             synchronized (mStartLock) {
@@ -210,7 +211,7 @@ public class ScreenRecordActivity extends Activity implements SurfaceHolder.Call
         public void surfaceCreated() {
             MyLog.logd(TAG, "surfaceCreated");
             Surface surface = mSurfaceHolder.getSurface();
-            //prepareGl(surface);
+            prepareGl(surface);
         }
 
         public void prepareGl(Surface surface) {

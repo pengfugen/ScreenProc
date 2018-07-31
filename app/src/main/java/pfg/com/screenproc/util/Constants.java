@@ -53,4 +53,30 @@ public class Constants {
                     //"  gl_FragColor = vColor;" +
                     "  gl_FragColor = v_Color;" +
                     "}";
+
+
+    public static final String video_vertex_shader =
+            "attribute vec4 aPosition;" +
+                    "attribute vec4 aTexCoord;" +
+                    "varying vec2 vTexCoord;" +
+                    "uniform mat4 uMatrix;" +
+                    "uniform mat4 uSTMatrix;"+
+                    "void main() {" +
+                    "    vTexCoord = (uSTMatrix * aTexCoord).xy;"+
+                    "    gl_Position = uMatrix*aPosition;" +
+                    "}";
+
+    /*
+     * 注意要有"\n"，不然会出现如下错误：
+     * L0001: Typename expected, found 'samplerExternalOES'
+     */
+    public static final String video_fragment_shader =
+            "#extension GL_OES_EGL_image_external : require\n"+
+            "precision mediump float;" +
+                    "varying vec2 vTexCoord;" +
+                    "uniform samplerExternalOES sTexture;"+
+                    "void main() {" +
+                    "  gl_FragColor=texture2D(sTexture, vTexCoord);" +
+                    "}";
+
 }

@@ -20,6 +20,8 @@ import android.opengl.GLSurfaceView;
 import android.view.MotionEvent;
 import android.util.AttributeSet;
 
+import pfg.com.screenproc.util.MyLog;
+
 /**
  * A view container where OpenGL ES graphics can be drawn on screen.
  * This view can also be used to capture touch events, such as a user
@@ -58,7 +60,7 @@ public class MyGLSurfaceView extends GLSurfaceView {
         setRenderer(mAirHockeyRenderer);
 
         // Render the view only when there is a change in the drawing data
-        setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+        setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
     }
 
     private final float TOUCH_SCALE_FACTOR = 180.0f / 320;
@@ -105,7 +107,7 @@ public class MyGLSurfaceView extends GLSurfaceView {
                 /*mRenderer.setAngle(
                         mRenderer.getAngle() +
                         ((dx + dy) * TOUCH_SCALE_FACTOR));  // = 180.0f / 320*/
-                requestRender();
+                //requestRender();
         }
 
         mPreviousX = x;

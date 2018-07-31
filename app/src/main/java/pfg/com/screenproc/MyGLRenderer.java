@@ -36,7 +36,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
+import pfg.com.screenproc.objects.Square;
+import pfg.com.screenproc.objects.Triangle;
 import pfg.com.screenproc.util.MatrixHelper;
+import pfg.com.screenproc.util.MyLog;
 import pfg.com.screenproc.util.ShaderHelper;
 
 /**
@@ -52,7 +55,7 @@ public class MyGLRenderer implements GLSurfaceView.Renderer {
 
     private static final String TAG = "MyGLRenderer";
     private Triangle mTriangle;
-    private Square   mSquare;
+    private Square mSquare;
 
     // mMVPMatrix is an abbreviation for "Model View Projection Matrix"
     private final float[] mMVPMatrix = new float[16];

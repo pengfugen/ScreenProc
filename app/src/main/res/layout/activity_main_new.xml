@@ -6,19 +6,33 @@
     android:layout_height="match_parent"
     tools:context="pfg.com.screenproc.MainActivity"
     android:orientation="vertical">
+    <pfg.com.screenproc.MyGLSurfaceView
+        android:id="@+id/surface_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:layout_marginTop="10dp"
+        android:layout_marginStart="40dp"
+        android:orientation="horizontal">
         <Button
-            android:id="@+id/btn_go"
+            android:id="@+id/btn_go_record"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Go screenrecord"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="10dp"/>
-    
-    <pfg.com.screenproc.MyGLSurfaceView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:id="@+id/surface_view"/>
+            android:text="Go screenrecord" />
+        <Button
+            android:id="@+id/btn_go_video"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Go videoplayer"
+            />
+    </LinearLayout>
+
+
+
 
 
 </FrameLayout>
