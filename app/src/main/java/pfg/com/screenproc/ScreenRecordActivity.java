@@ -2,6 +2,7 @@ package pfg.com.screenproc;
 
 import android.app.Activity;
 import android.opengl.EGL14;
+import android.opengl.GLES20;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -12,13 +13,19 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.widget.Button;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
 
 import pfg.com.screenproc.egl.EGLCore;
+import pfg.com.screenproc.egl.FullFrameRect;
+import pfg.com.screenproc.egl.Texture2dProgram;
 import pfg.com.screenproc.egl.WindowSurface;
+import pfg.com.screenproc.util.GlUtil;
 import pfg.com.screenproc.util.MyLog;
+import android.graphics.Rect;
+import android.opengl.Matrix;
 
 /**
  * Created by FPENG3 on 2018/7/26.
@@ -30,11 +37,11 @@ public class ScreenRecordActivity extends Activity implements SurfaceHolder.Call
 
     SurfaceView mSurfaceView;
     private static final String VIDEO_FILE_PATH = Environment.getExternalStorageDirectory()+"/"+"test.mp4";
-    private static final String RECORD_VIDEO_FILE_PATH = Environment.getExternalStorageDirectory()+"/"+"record.mp4";
+    private static final String RECORD_VIDEO_FILE_PATH = Environment.getExternalStorageDirectory()+"/"+"record01.mp4";
 
 
     private Surface outputSurface;
-    VideoDecoderCore decoderCore;
+    static VideoDecoderCore decoderCore;
 
 
     private static final int RECMETHOD_DRAW_TWICE = 0;
@@ -43,6 +50,7 @@ public class ScreenRecordActivity extends Activity implements SurfaceHolder.Call
     private int mSelectedRecordMethod;
     private static boolean mRecordingEnabled = false;
     private RenderThread mRenderThread;
+    Button btn_record;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +60,8 @@ public class ScreenRecordActivity extends Activity implements SurfaceHolder.Call
         mSurfaceView.getHolder().addCallback(this);
 
         mSelectedRecordMethod = RECMETHOD_FBO;
+
+        btn_record = (Button) findViewById(R.id.fboRecord_button);
     }
 
     @Override
@@ -71,11 +81,17 @@ public class ScreenRecordActivity extends Activity implements SurfaceHolder.Call
 
     public void clickToggleRecording(@SuppressWarnings("unused") View unused) {
         MyLog.logd(TAG, "clickToggleRecording");
+
         Choreographer.getInstance().postFrameCallback(this);
         RenderHandler rh = mRenderThread.getHandler();
         if(rh != null) {
             mRecordingEnabled = !mRecordingEnabled;
             rh.setRecordingEnabled(mRecordingEnabled);
+        }
+        if(mRecordingEnabled) {
+            btn_record.setText("Stop Record");
+        } else {
+            btn_record.setText("Start Record");
         }
     }
 
@@ -85,20 +101,11 @@ public class ScreenRecordActivity extends Activity implements SurfaceHolder.Call
         MyLog.logd(TAG,"surfaceCreated isCurrentThread:"+Looper.myLooper().isCurrentThread());
         SurfaceView sv = (SurfaceView) findViewById(R.id.fboActivity_surfaceView);
         File outputFile = new File(RECORD_VIDEO_FILE_PATH);
-        mRenderThread = new RenderThread(sv.getHolder(), outputFile);
+        mRenderThread = new RenderThread(mSurfaceView.getHolder(), outputFile);
         mRenderThread.start();
         mRenderThread.waitUntilReady();
+
         mRenderThread.setRecordMethod(mSelectedRecordMethod);
-        RenderHandler rh = mRenderThread.getHandler();
-        if(rh != null) {
-            rh.sendSurfaceCreated();
-        }
-        /*RenderHandler rh = mRenderThread.getHandler();
-        if(rh != null) {
-            rh.sendSurfaceCreated();
-        }*/
-
-
     }
 
     @Override
@@ -143,7 +150,7 @@ public class ScreenRecordActivity extends Activity implements SurfaceHolder.Call
 
     @Override
     public void doFrame(long var1) {
-        MyLog.logd(TAG,"doFrame isCurrentThread:"+Looper.myLooper().isCurrentThread());
+        //MyLog.logd(TAG,"doFrame isCurrentThread:"+Looper.myLooper().isCurrentThread());
         RenderHandler rh = mRenderThread.getHandler();
         if (rh != null) {
             Choreographer.getInstance().postFrameCallback(this);
@@ -160,6 +167,7 @@ public class ScreenRecordActivity extends Activity implements SurfaceHolder.Call
         private RenderHandler mRenderHandler;
         private EGLCore mEglCore;
         private VideoEncoderCore mEncoderCore;
+        private VideoEncoder mVideoEncoder;
 
         private SurfaceHolder mSurfaceHolder;
         private File mOutputFile;
@@ -169,16 +177,30 @@ public class ScreenRecordActivity extends Activity implements SurfaceHolder.Call
 
         private WindowSurface mInputWindowSurface;
 
+        // Used for off-screen rendering.
+        private int mOffscreenTexture;
+        private int mFramebuffer;
+        private int mDepthBuffer;
+        private FullFrameRect mFullScreen;
+        private Rect mVideoRect;
+        private final float[] mIdentityMatrix;
+        private int mSurfaceWidth;
+        private int mSurfaceHeight;
+
         public RenderThread(SurfaceHolder holder, File outputFile) {
             mSurfaceHolder = holder;
             mOutputFile = outputFile;
+
+            mVideoRect = new Rect();
+            mIdentityMatrix = new float[16];
+            Matrix.setIdentityM(mIdentityMatrix, 0);
         }
 
         @Override
         public void run() {
             Looper.prepare();
             mRenderHandler = new RenderHandler(this);
-            mEglCore = new EGLCore(EGL14.eglGetCurrentContext(), EGLCore.FLAG_TRY_GLES3 | EGLCore.FLAG_RECORDABLE);
+            mEglCore = new EGLCore(null, EGLCore.FLAG_TRY_GLES3 | EGLCore.FLAG_RECORDABLE);
 
 
             synchronized (mStartLock) {
@@ -216,17 +238,86 @@ public class ScreenRecordActivity extends Activity implements SurfaceHolder.Call
 
         public void prepareGl(Surface surface) {
             MyLog.logd(TAG, "prepareGl");
-            mWindowSurface = new WindowSurface(mEglCore, surface, false);
-            mWindowSurface.makeCurrent();
+            // mWindowSurface = new WindowSurface(mEglCore, surface, false);
+            // mWindowSurface.makeCurrent();
+            mFullScreen = new FullFrameRect(
+                    new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_2D));
+
         }
 
         public void surfaceChanged(int width, int height) {
             MyLog.logd(TAG, "surfaceChanged");
             prepareFramebuffer(width, height);
+            mSurfaceWidth = width;
+            mSurfaceHeight = height;
         }
 
         public void prepareFramebuffer(int width, int height) {
-            MyLog.logd(TAG, "prepareFramebuffer");
+            MyLog.logd(TAG, "prepareFramebuffer width:"+width+" height:"+height);
+            GlUtil.checkGlError("prepareFramebuffer start");
+
+            int[] values = new int[1];
+
+            // Create a texture object and bind it.  This will be the color buffer.
+            GLES20.glGenTextures(1, values, 0);
+            GlUtil.checkGlError("glGenTextures");
+            mOffscreenTexture = values[0];   // expected > 0
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mOffscreenTexture);
+            GlUtil.checkGlError("glBindTexture " + mOffscreenTexture);
+
+            // Create texture storage.
+            GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, width, height, 0,
+                    GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null);
+
+            // Set parameters.  We're probably using non-power-of-two dimensions, so
+            // some values may not be available for use.
+            GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER,
+                    GLES20.GL_NEAREST);
+            GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER,
+                    GLES20.GL_LINEAR);
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S,
+                    GLES20.GL_CLAMP_TO_EDGE);
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T,
+                    GLES20.GL_CLAMP_TO_EDGE);
+            GlUtil.checkGlError("glTexParameter");
+
+            // Create framebuffer object and bind it.
+            GLES20.glGenFramebuffers(1, values, 0);
+            GlUtil.checkGlError("glGenFramebuffers");
+            mFramebuffer = values[0];    // expected > 0
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, mFramebuffer);
+            GlUtil.checkGlError("glBindFramebuffer " + mFramebuffer);
+
+            // Create a depth buffer and bind it.
+            GLES20.glGenRenderbuffers(1, values, 0);
+            GlUtil.checkGlError("glGenRenderbuffers");
+            mDepthBuffer = values[0];    // expected > 0
+            GLES20.glBindRenderbuffer(GLES20.GL_RENDERBUFFER, mDepthBuffer);
+            GlUtil.checkGlError("glBindRenderbuffer " + mDepthBuffer);
+
+            // Allocate storage for the depth buffer.
+            GLES20.glRenderbufferStorage(GLES20.GL_RENDERBUFFER, GLES20.GL_DEPTH_COMPONENT16,
+                    width, height);
+            GlUtil.checkGlError("glRenderbufferStorage");
+
+            // Attach the depth buffer and the texture (color buffer) to the framebuffer object.
+            GLES20.glFramebufferRenderbuffer(GLES20.GL_FRAMEBUFFER, GLES20.GL_DEPTH_ATTACHMENT,
+                    GLES20.GL_RENDERBUFFER, mDepthBuffer);
+            GlUtil.checkGlError("glFramebufferRenderbuffer");
+            GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0,
+                    GLES20.GL_TEXTURE_2D, mOffscreenTexture, 0);
+            GlUtil.checkGlError("glFramebufferTexture2D");
+
+            // See if GLES is happy with all this.
+            int status = GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER);
+            if (status != GLES20.GL_FRAMEBUFFER_COMPLETE) {
+                throw new RuntimeException("Framebuffer not complete, status=" + status);
+            }
+
+            // Switch back to the default framebuffer.
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+
+            GlUtil.checkGlError("prepareFramebuffer done");
         }
 
         public void releaseGl() {
@@ -255,23 +346,20 @@ public class ScreenRecordActivity extends Activity implements SurfaceHolder.Call
         }
 
         public void startEncoder() {
-            // MyLog.logd(TAG, "startEncoder");
-            if(mWindowSurface != null) {
-                int windowWidth = mWindowSurface.getWidth();
-                int windowHeight = mWindowSurface.getHeight();
-                MyLog.logd(TAG, "startEncoder windowWidth:"+windowWidth+" windowHeight:"+windowHeight);
-            }
-
-            mEncoderCore = new VideoEncoderCore(1280, 720, mOutputFile.toString());
-            mInputWindowSurface = new WindowSurface(mEglCore, mEncoderCore.getInputSurface(), true);
+            MyLog.logd(TAG, "startEncoder videoWidth:" + decoderCore.getVideoWidth()+" videoHeight:"+decoderCore.getVideoHeight());
+            mEncoderCore = new VideoEncoderCore(decoderCore.getVideoWidth(), decoderCore.getVideoHeight(), RECORD_VIDEO_FILE_PATH);
+            mInputWindowSurface = new WindowSurface(mEglCore, mEncoderCore.getInputSurface(), false);
+            mVideoEncoder = new VideoEncoder(mEncoderCore);
         }
 
         public void stopEncoder() {
             MyLog.logd(TAG, "stopEncoder");
-            if(mEncoderCore != null) {
-                mEncoderCore.drainEncoder(true);
-                mEncoderCore.release();
-                mEncoderCore = null;
+            if (mVideoEncoder != null) {
+                MyLog.logd(TAG, "stopping recorder, mVideoEncoder=" + mVideoEncoder);
+                mVideoEncoder.stopRecording();
+                // TODO: wait (briefly) until it finishes shutting down so we know file is
+                //       complete, or have a callback that updates the UI
+                mVideoEncoder = null;
             }
 
             if (mInputWindowSurface != null) {
@@ -297,22 +385,15 @@ public class ScreenRecordActivity extends Activity implements SurfaceHolder.Call
             } else {
                 mRecordedPrevious = true;
                 if(mRecordMethod == RECMETHOD_FBO) {
-                    //swapResult = mWindowSurface.swapBuffers();
-
-                    // Blit to encoder.
-                    mEncoderCore.drainEncoder(false);
+                    mVideoEncoder.frameAvailableSoon();
                     mInputWindowSurface.makeCurrent();
-                    /*GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);    // again, only really need to
+                    GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);    // again, only really need to
                     GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);     //  clear pixels outside rect
                     GLES20.glViewport(mVideoRect.left, mVideoRect.top,
-                            mVideoRect.width(), mVideoRect.height());*/
-
+                            mVideoRect.width(), mVideoRect.height());
+                    mFullScreen.drawFrame(mOffscreenTexture, mIdentityMatrix);
                     // mInputWindowSurface.setPresentationTime(timeStampNanos);
                     mInputWindowSurface.swapBuffers();
-
-                    // Restore previous values.
-                    //GLES20.glViewport(0, 0, mWindowSurface.getWidth(), mWindowSurface.getHeight());
-                    //mWindowSurface.makeCurrent();
                 }
             }
         }

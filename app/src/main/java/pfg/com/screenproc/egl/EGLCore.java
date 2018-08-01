@@ -61,6 +61,7 @@ public class EGLCore {
                     //Log.d(TAG, "Got GLES 3 config");
                     mEglConfig = config;
                     mEglContext = context;
+                    MyLog.logd(TAG, "EGLCore---eglContext(eglCreateContext): " + mEglContext);
                     mGlVersion = 3;
                 } else {
                     checkEglError("eglCreateContext");

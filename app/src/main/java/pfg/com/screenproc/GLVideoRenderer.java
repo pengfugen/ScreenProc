@@ -2,6 +2,7 @@ package pfg.com.screenproc;
 
 import pfg.com.screenproc.util.CheckGlError;
 import pfg.com.screenproc.util.Constants;
+import pfg.com.screenproc.util.MatrixHelper;
 import pfg.com.screenproc.util.MyLog;
 import pfg.com.screenproc.util.ShaderHelper;
 
@@ -73,7 +74,7 @@ public class GLVideoRenderer implements GLSurfaceView.Renderer
     private int screenWidth, screenHeight;
 
     VideoEncoder mVideoEncoder;
-    private static final String RECORD_VIDEO_FILE_PATH = Environment.getExternalStorageDirectory()+"/"+"record.mp4";
+    private static final String RECORD_VIDEO_FILE_PATH = Environment.getExternalStorageDirectory()+"/"+"texture_record.mp4";
 
     private GLSurfaceView mGLSurfaceView;
 
@@ -156,7 +157,7 @@ public class GLVideoRenderer implements GLSurfaceView.Renderer
             playerPrepared = true;
         }
 
-        MyLog.logd(TAG, "onSurfaceCreated---eglContext: "+EGL14.eglGetCurrentContext()+" threadid: "+Thread.currentThread().getId());
+        //MyLog.logd(TAG, "onSurfaceCreated---eglContext: "+EGL14.eglGetCurrentContext()+" threadid: "+Thread.currentThread().getId());
 
     }
 
@@ -180,7 +181,6 @@ public class GLVideoRenderer implements GLSurfaceView.Renderer
         GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
         synchronized (this) {
             if (updateSurface) {
-                MyLog.logd(TAG, "onDrawFrame---eglContext: "+EGL14.eglGetCurrentContext()+" threadid: "+Thread.currentThread().getId());
                 // 没有使用VIdeoEncoder多线程时，意思是InputWindowSurface和SurfaceTexture在同一个线程出现如下错误：
                 /*
                  * E/GLConsumer: [SurfaceTexture-1-8514-0] checkAndUpdateEglState: invalid current EGLContext
@@ -237,10 +237,28 @@ public class GLVideoRenderer implements GLSurfaceView.Renderer
     private void updateProjection(int videoWidth, int videoHeight) {
         float screenRatio = (float) screenWidth / screenHeight;
         float videoRatio = (float) videoWidth / videoHeight;
-        if (videoRatio > screenRatio) {
+        // 1
+        /*if (videoRatio > screenRatio) {
             Matrix.orthoM(projectionMatrix, 0, -1f, 1f, -videoRatio / screenRatio, videoRatio / screenRatio, -1f, 1f);
         } else
-            Matrix.orthoM(projectionMatrix, 0, -screenRatio / videoRatio, screenRatio / videoRatio, -1f, 1f, -1f, 1f);
+            Matrix.orthoM(projectionMatrix, 0, -screenRatio / videoRatio, screenRatio / videoRatio, -1f, 1f, -1f, 1f);*/
+        // ====================================
+        // 2
+        // Z轴值-1到-10,但是默认Z是0，因此需要把Z平移到这个范围,否则看不到任何画像
+        MatrixHelper.perspectiveM(projectionMatrix, 45, (float) videoWidth / (float) videoHeight, 1f, 10f);
+        // 初始化单位矩阵
+        float [] modelMatrix = new float[16];
+        Matrix.setIdentityM(modelMatrix, 0);
+        //Matrix.translateM(modelMatrix, 0, 0f, 0f, -2f);
+
+        // 沿着Z轴平移-2.5f, 这样在-1到-10范围内所以画面就可见了。
+        Matrix.translateM(modelMatrix, 0, 0f, 0f, -2.5f);
+        // 沿着X轴旋转
+        Matrix.rotateM(modelMatrix, 0, -60f, 1f, 0f, 0f);
+        float [] temp = new float[16];
+        Matrix.multiplyMM(temp, 0, projectionMatrix, 0, modelMatrix, 0);
+        System.arraycopy(temp, 0, projectionMatrix, 0, temp.length);
+
     }
 
     public MediaPlayer getMediaPlayer() {
@@ -248,7 +266,7 @@ public class GLVideoRenderer implements GLSurfaceView.Renderer
     }
 
     public void startRecord(EGLContext eglContext) {
-        MyLog.logd(TAG,"startRecord---eglContext: "+eglContext+" threadid: "+Thread.currentThread().getId());
+        MyLog.logd(TAG,"startRecord---eglContext(eglGetCurrentContext): "+eglContext+" threadid: "+Thread.currentThread().getId());
         mVideoEncoder.startRecording(eglContext);
     }
 

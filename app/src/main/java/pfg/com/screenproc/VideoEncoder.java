@@ -65,7 +65,8 @@ public class VideoEncoder implements Runnable {
     private static final int MSG_START_RECORDING = 0;
     private static final int MSG_STOP_RECORDING = 1;
     private static final int MSG_FRAME_AVAILABLE = 2;
-    private static final int MSG_SET_TEXTURE_ID = 3;
+    private static final int MSG_SCREEN_FRAME_AVAILABLE = 3;
+    private static final int MSG_SET_TEXTURE_ID = 4;
     private static final int MSG_QUIT = 5;
 
     // ----- accessed exclusively by encoder thread -----
@@ -85,12 +86,32 @@ public class VideoEncoder implements Runnable {
     private int mWidth;
     private int mHeight;
     private String mFilePath;
+    private VideoEncoderCore mEncoderCore;
 
 
     public VideoEncoder(int width, int height, String filePath) {
         mWidth = width;
         mHeight = height;
         mFilePath = filePath;
+    }
+
+    public VideoEncoder(VideoEncoderCore encoderCore) {
+        mEncoderCore = encoderCore;
+        synchronized (mReadyFence) {
+            if (mRunning) {
+                MyLog.logd(TAG, "Encoder thread already running");
+                return;
+            }
+            mRunning = true;
+            new Thread(this, "VideoEncoder").start();
+            while (!mReady) {
+                try {
+                    mReadyFence.wait();
+                } catch (InterruptedException ie) {
+                    // ignore
+                }
+            }
+        }
     }
 
     /**
@@ -109,7 +130,7 @@ public class VideoEncoder implements Runnable {
                 return;
             }
             mRunning = true;
-            new Thread(this, "TextureMovieEncoder").start();
+            new Thread(this, "VideoEncoder").start();
             while (!mReady) {
                 try {
                     mReadyFence.wait();
@@ -185,6 +206,16 @@ public class VideoEncoder implements Runnable {
                 (int) (timestamp >> 32), (int) timestamp, transform));
     }
 
+    public void frameAvailableSoon() {
+        synchronized (mReadyFence) {
+            if (!mReady) {
+                return;
+            }
+        }
+
+        mHandler.sendMessage(mHandler.obtainMessage(MSG_SCREEN_FRAME_AVAILABLE));
+    }
+
     /**
      * Tells the video recorder what texture name to use.  This is the external texture that
      * we're receiving camera previews in.  (Call from non-encoder thread.)
@@ -258,6 +289,9 @@ public class VideoEncoder implements Runnable {
                             (((long) inputMessage.arg2) & 0xffffffffL);
                     encoder.handleFrameAvailable((float[]) obj, timestamp);
                     break;
+                case MSG_SCREEN_FRAME_AVAILABLE:
+                    encoder.handleFrameAvailable();
+                    break;
                 case MSG_SET_TEXTURE_ID:
                     encoder.handleSetTexture(inputMessage.arg1);
                     break;
@@ -303,6 +337,10 @@ public class VideoEncoder implements Runnable {
         mInputWindowSurface.swapBuffers();
     }
 
+    private void handleFrameAvailable() {
+        mVideoEncoder.drainEncoder(false);
+    }
+
     /**
      * Handles a request to stop encoding.
      */
@@ -323,9 +361,12 @@ public class VideoEncoder implements Runnable {
     private void prepareEncoder(EGLContext sharedContext) {
 
         mVideoEncoder = new VideoEncoderCore(mWidth, mHeight, mFilePath);
-
+        MyLog.logd(TAG, "prepareEncoder---eglContext(eglGetCurrentContext): " + EGL14.eglGetCurrentContext());
         // sharedContext用于多线程之间共享的上下文
+        // 疑问：不同线程对全局变量EGLContext进行makeCurrent是不是可以达到不同线程之间共享上下文？
+        // 不可以，因为EGLContext是单线程的，类似于JNI中的JNIENV变量。需要再通过eglCreateContext带sharecontext创建一个新的EGLContext
         mEglCore = new EGLCore(sharedContext, EGLCore.FLAG_RECORDABLE | EGLCore.FLAG_TRY_GLES3);
+        MyLog.logd(TAG, "prepareEncoder---sharedContext: " + sharedContext);
         mInputWindowSurface = new WindowSurface(mEglCore, mVideoEncoder.getInputSurface(), true);
         mInputWindowSurface.makeCurrent();
         mFullScreen = new FullFrameRect(

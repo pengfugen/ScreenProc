@@ -35,7 +35,21 @@ public class GlUtil {
     public static final float[] IDENTITY_MATRIX;
     static {
         IDENTITY_MATRIX = new float[16];
-        Matrix.setIdentityM(IDENTITY_MATRIX, 0);
+        // Z轴值-1到-10,但是默认Z是0，因此需要把Z平移到这个范围,否则看不到任何画像
+        MatrixHelper.perspectiveM(IDENTITY_MATRIX, 45, (float) 968 / (float) 544, 1f, 10f);
+        // 初始化单位矩阵
+        float [] modelMatrix = new float[16];
+        Matrix.setIdentityM(modelMatrix, 0);
+        //Matrix.translateM(modelMatrix, 0, 0f, 0f, -2f);
+
+        // 沿着Z轴平移-2.5f, 这样在-1到-10范围内所以画面就可见了。
+        Matrix.translateM(modelMatrix, 0, 0f, 0f, -2.5f);
+        // 沿着X轴旋转
+        Matrix.rotateM(modelMatrix, 0, -60f, 1f, 0f, 0f);
+        float [] temp = new float[16];
+        Matrix.multiplyMM(temp, 0, IDENTITY_MATRIX, 0, modelMatrix, 0);
+        System.arraycopy(temp, 0, IDENTITY_MATRIX, 0, temp.length);
+        //Matrix.setIdentityM(IDENTITY_MATRIX, 0);
     }
 
     private static final int SIZEOF_FLOAT = 4;
@@ -61,7 +75,7 @@ public class GlUtil {
         int program = GLES20.glCreateProgram();
         checkGlError("glCreateProgram");
         if (program == 0) {
-            Log.e(TAG, "Could not create program");
+            MyLog.loge(TAG, "Could not create program");
         }
         GLES20.glAttachShader(program, vertexShader);
         checkGlError("glAttachShader");
@@ -71,8 +85,8 @@ public class GlUtil {
         int[] linkStatus = new int[1];
         GLES20.glGetProgramiv(program, GLES20.GL_LINK_STATUS, linkStatus, 0);
         if (linkStatus[0] != GLES20.GL_TRUE) {
-            Log.e(TAG, "Could not link program: ");
-            Log.e(TAG, GLES20.glGetProgramInfoLog(program));
+            MyLog.loge(TAG, "Could not link program: ");
+            MyLog.loge(TAG, GLES20.glGetProgramInfoLog(program));
             GLES20.glDeleteProgram(program);
             program = 0;
         }
@@ -88,12 +102,14 @@ public class GlUtil {
         int shader = GLES20.glCreateShader(shaderType);
         checkGlError("glCreateShader type=" + shaderType);
         GLES20.glShaderSource(shader, source);
+        checkGlError("glShaderSource");
         GLES20.glCompileShader(shader);
+        checkGlError("glCompileShader");
         int[] compiled = new int[1];
         GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, compiled, 0);
         if (compiled[0] == 0) {
-            Log.e(TAG, "Could not compile shader " + shaderType + ":");
-            Log.e(TAG, " " + GLES20.glGetShaderInfoLog(shader));
+            MyLog.loge(TAG, "Could not compile shader " + shaderType + ":");
+            MyLog.loge(TAG, " " + GLES20.glGetShaderInfoLog(shader));
             GLES20.glDeleteShader(shader);
             shader = 0;
         }
@@ -177,9 +193,9 @@ public class GlUtil {
      * Writes GL version info to the log.
      */
     public static void logVersionInfo() {
-        Log.i(TAG, "vendor  : " + GLES20.glGetString(GLES20.GL_VENDOR));
-        Log.i(TAG, "renderer: " + GLES20.glGetString(GLES20.GL_RENDERER));
-        Log.i(TAG, "version : " + GLES20.glGetString(GLES20.GL_VERSION));
+        MyLog.logd(TAG, "vendor  : " + GLES20.glGetString(GLES20.GL_VENDOR));
+        MyLog.logd(TAG, "renderer: " + GLES20.glGetString(GLES20.GL_RENDERER));
+        MyLog.logd(TAG, "version : " + GLES20.glGetString(GLES20.GL_VERSION));
 
         if (false) {
             int[] values = new int[1];
@@ -188,7 +204,7 @@ public class GlUtil {
             GLES30.glGetIntegerv(GLES30.GL_MINOR_VERSION, values, 0);
             int minorVersion = values[0];
             if (GLES30.glGetError() == GLES30.GL_NO_ERROR) {
-                Log.i(TAG, "iversion: " + majorVersion + "." + minorVersion);
+                MyLog.logd(TAG, "iversion: " + majorVersion + "." + minorVersion);
             }
         }
     }

@@ -1,5 +1,6 @@
 package pfg.com.screenproc;
 
+import android.media.Image;
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
@@ -34,6 +35,7 @@ public class VideoDecoderCore {
     private HandlerThread handlerThread;
     private Handler mHandler;
     private boolean isStoped = false;
+    private int mWidth, mHeight;
 
     private Object lock = new Object();
 
@@ -52,6 +54,8 @@ public class VideoDecoderCore {
                 MediaFormat format = extractor.getTrackFormat(i);
                 mime = format.getString(MediaFormat.KEY_MIME);
                 if (mime.startsWith("video/")) {
+                    mWidth = format.getInteger(MediaFormat.KEY_WIDTH);
+                    mHeight = format.getInteger(MediaFormat.KEY_HEIGHT);
                     extractor.selectTrack(i);
                     mediaCodec = MediaCodec.createDecoderByType(mime);
                     mediaCodec.configure(format, surface, null, 0);
@@ -161,6 +165,14 @@ public class VideoDecoderCore {
     private void handleStop() {
         MyLog.logd(TAG, "handleStop()");
         handlerThread.quit();
+    }
+
+    public int getVideoWidth() {
+        return mWidth;
+    }
+
+    public int getVideoHeight() {
+        return mHeight;
     }
 
 

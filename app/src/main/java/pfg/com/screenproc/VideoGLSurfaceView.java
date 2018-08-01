@@ -57,6 +57,8 @@ public class VideoGLSurfaceView extends GLSurfaceView {
             @Override
             public void run() {
                 // 传入当前线程的EGL上下文环境作为record线程的共享EGLContext
+                // 是否也可以通过eglCreateContext来传入eglContext
+                // 这里使用共享EGLContext的目的是对textureid进行共享
                 mRenderer.startRecord(EGL14.eglGetCurrentContext());
             }
         });
