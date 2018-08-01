@@ -7,7 +7,7 @@ GLSurfaceView、Opengl、SurfaceTexture
 3) 视频实时传输
 
 # 注意:
-使用Opengl接口前必须先使用EGL创建Opengl的上下文运行环境。  
+使用Opengl接口前必须先使用EGL创建Opengl的上下文运行环境(即EGLContext)，而且EGLContext和线程一一对应，线程之间可以共享EGLContext。  
 GLSurfaceView已经为我们创建好了EGL上下文运行环境。
 
 # 使用EGL的绘图的一般步骤：
