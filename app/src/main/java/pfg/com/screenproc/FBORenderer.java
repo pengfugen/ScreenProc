@@ -53,7 +53,7 @@ public class FBORenderer implements IRenderer{
     private int mFramebuffer;
     private int mDepthBuffer;
     static private FullFrameRect mFullScreen;
-    private Triangle mTriangle;
+    static private Triangle mTriangle;
     static private int mWidth, mHeight;
 
     private HandlerThread mHanderThread;
@@ -94,6 +94,9 @@ public class FBORenderer implements IRenderer{
         MyLog.logd(TAG, "onDrawFrame");
         // 方法1
         /*draw();
+        // 接着GLSurfaceView的GLRender线程会自动调用swapBuffer方法用于显示
+
+        // 开始录制
         if(!isStoped) {
             mRecordHandler.sendEmptyMessage(MSG_FRAME_AVAILABLE);
         }*/
@@ -112,10 +115,12 @@ public class FBORenderer implements IRenderer{
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
         GlUtil.checkGlError("glBindFramebuffer");
         mFullScreen.drawFrame(mOffscreenTexture, mIdentityMatrix);
+        // 接着GLSurfaceView的GLRender线程会自动调用swapBuffer方法用于显示
+
+        // 开始录制
         if(!isStoped) {
             mRecordHandler.sendEmptyMessage(MSG_FRAME_AVAILABLE);
         }
-
     }
 
     public static class RecordHandler extends Handler {
@@ -363,7 +368,7 @@ public class FBORenderer implements IRenderer{
         GlUtil.checkGlError("prepareFramebuffer done");
     }
 
-    private void draw() {
+    private static void draw() {
         //GLES20.glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
 
