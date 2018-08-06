@@ -29,13 +29,13 @@ import java.nio.FloatBuffer;
  * Some OpenGL utility functions.
  */
 public class GlUtil {
-    public static final String TAG = "Grafika";
+    public static final String TAG = "GlUtil";
 
     /** Identity matrix for general use.  Don't modify or life will get weird. */
     public static final float[] IDENTITY_MATRIX;
     static {
         IDENTITY_MATRIX = new float[16];
-        // Z轴值-1到-10,但是默认Z是0，因此需要把Z平移到这个范围,否则看不到任何画像
+        /*// Z轴值-1到-10,但是默认Z是0，因此需要把Z平移到这个范围,否则看不到任何画像
         MatrixHelper.perspectiveM(IDENTITY_MATRIX, 45, (float) 968 / (float) 544, 1f, 10f);
         // 初始化单位矩阵
         float [] modelMatrix = new float[16];
@@ -48,8 +48,8 @@ public class GlUtil {
         Matrix.rotateM(modelMatrix, 0, -60f, 1f, 0f, 0f);
         float [] temp = new float[16];
         Matrix.multiplyMM(temp, 0, IDENTITY_MATRIX, 0, modelMatrix, 0);
-        System.arraycopy(temp, 0, IDENTITY_MATRIX, 0, temp.length);
-        //Matrix.setIdentityM(IDENTITY_MATRIX, 0);
+        System.arraycopy(temp, 0, IDENTITY_MATRIX, 0, temp.length);*/
+        Matrix.setIdentityM(IDENTITY_MATRIX, 0);
     }
 
     private static final int SIZEOF_FLOAT = 4;

@@ -13,7 +13,7 @@ import android.widget.Button;
 
 public class VideoGLSurfaceView extends GLSurfaceView {
 
-    private GLVideoRenderer mRenderer;
+    private IRenderer mRenderer;
     private static final String VIDEO_FILE_PATH = Environment.getExternalStorageDirectory()+"/"+"test.mp4";
 
     Context mContex;
@@ -25,11 +25,11 @@ public class VideoGLSurfaceView extends GLSurfaceView {
 
         // Set the Renderer for drawing on the GLSurfaceView
         // mRenderer = new MyGLRenderer(context);
-        mRenderer = new GLVideoRenderer(context, this, VIDEO_FILE_PATH);
+        /*mRenderer = new VideoGLRenderer(context, this, VIDEO_FILE_PATH);
         setRenderer(mRenderer);
 
         // Render the view only when there is a change in the drawing data
-        setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+        setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);*/
         mContex = context;
     }
 
@@ -40,26 +40,37 @@ public class VideoGLSurfaceView extends GLSurfaceView {
 
         // Set the Renderer for drawing on the GLSurfaceView
         // mRenderer = new MyGLRenderer(context);
-        mRenderer = new GLVideoRenderer(context, this, VIDEO_FILE_PATH);
+        /*mRenderer = new VideoGLRenderer(context, this, VIDEO_FILE_PATH);
         setRenderer(mRenderer);
 
         // Render the view only when there is a change in the drawing data
-        setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
+        setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);*/
         mContex= context;
     }
 
-    public GLVideoRenderer getRenderer() {
+    public IRenderer getRenderer() {
         return mRenderer;
     }
 
-    public void startRecord() {
+    @Override
+    public void setRenderer(Renderer renderer) {
+        super.setRenderer(renderer);
+        mRenderer = (IRenderer) renderer;
+    }
+
+    public void startRecord(boolean needEglContext) {
         queueEvent(new Runnable() {
             @Override
             public void run() {
                 // 传入当前线程的EGL上下文环境作为record线程的共享EGLContext
                 // 是否也可以通过eglCreateContext来传入eglContext
-                // 这里使用共享EGLContext的目的是对textureid进行共享
-                mRenderer.startRecord(EGL14.eglGetCurrentContext());
+                // 这里使用共享EGLContext的目的是对textureid进
+                if(needEglContext) {
+                    mRenderer.startRecord(EGL14.eglGetCurrentContext());
+                } else {
+                    mRenderer.startRecord();
+                }
+
             }
         });
     }
@@ -69,6 +80,15 @@ public class VideoGLSurfaceView extends GLSurfaceView {
             @Override
             public void run() {
                 mRenderer.stopRecord();
+            }
+        });
+    }
+
+    public void shutdown() {
+        queueEvent(new Runnable() {
+            @Override
+            public void run() {
+                mRenderer.shutdown();
             }
         });
     }

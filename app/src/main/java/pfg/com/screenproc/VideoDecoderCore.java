@@ -4,6 +4,8 @@ import android.media.Image;
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
+import android.opengl.EGL14;
+import android.opengl.EGLContext;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
@@ -38,6 +40,7 @@ public class VideoDecoderCore {
     private int mWidth, mHeight;
 
     private Object lock = new Object();
+    public EGLContext eglContext;
 
     public VideoDecoderCore(String filePath, Surface surface) {
         this.filePath = filePath;
@@ -68,7 +71,7 @@ public class VideoDecoderCore {
             MyLog.logd(TAG, "IOException msg:"+e.getMessage());
             e.printStackTrace();
         }
-
+        eglContext = EGL14.eglGetCurrentContext();
     }
 
     public void start() {

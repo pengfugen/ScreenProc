@@ -82,7 +82,7 @@ public class ScreenRecordActivity extends Activity implements SurfaceHolder.Call
     public void clickToggleRecording(@SuppressWarnings("unused") View unused) {
         MyLog.logd(TAG, "clickToggleRecording");
 
-        Choreographer.getInstance().postFrameCallback(this);
+        //Choreographer.getInstance().postFrameCallback(this);
         RenderHandler rh = mRenderThread.getHandler();
         if(rh != null) {
             mRecordingEnabled = !mRecordingEnabled;
@@ -106,6 +106,8 @@ public class ScreenRecordActivity extends Activity implements SurfaceHolder.Call
         mRenderThread.waitUntilReady();
 
         mRenderThread.setRecordMethod(mSelectedRecordMethod);
+
+        mRenderThread.getHandler().sendSurfaceCreated();
     }
 
     @Override
@@ -200,7 +202,7 @@ public class ScreenRecordActivity extends Activity implements SurfaceHolder.Call
         public void run() {
             Looper.prepare();
             mRenderHandler = new RenderHandler(this);
-            mEglCore = new EGLCore(null, EGLCore.FLAG_TRY_GLES3 | EGLCore.FLAG_RECORDABLE);
+            //mEglCore = new EGLCore(decoderCore.eglContext, EGLCore.FLAG_TRY_GLES3 | EGLCore.FLAG_RECORDABLE);
 
 
             synchronized (mStartLock) {
@@ -233,13 +235,13 @@ public class ScreenRecordActivity extends Activity implements SurfaceHolder.Call
         public void surfaceCreated() {
             MyLog.logd(TAG, "surfaceCreated");
             Surface surface = mSurfaceHolder.getSurface();
-            prepareGl(surface);
+            //prepareGl(surface);
         }
 
         public void prepareGl(Surface surface) {
             MyLog.logd(TAG, "prepareGl");
-            // mWindowSurface = new WindowSurface(mEglCore, surface, false);
-            // mWindowSurface.makeCurrent();
+            mWindowSurface = new WindowSurface(mEglCore, surface, false);
+            mWindowSurface.makeCurrent();
             mFullScreen = new FullFrameRect(
                     new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_2D));
 
@@ -247,7 +249,7 @@ public class ScreenRecordActivity extends Activity implements SurfaceHolder.Call
 
         public void surfaceChanged(int width, int height) {
             MyLog.logd(TAG, "surfaceChanged");
-            prepareFramebuffer(width, height);
+            //prepareFramebuffer(width, height);
             mSurfaceWidth = width;
             mSurfaceHeight = height;
         }
@@ -310,9 +312,9 @@ public class ScreenRecordActivity extends Activity implements SurfaceHolder.Call
 
             // See if GLES is happy with all this.
             int status = GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER);
-            if (status != GLES20.GL_FRAMEBUFFER_COMPLETE) {
+            /*if (status != GLES20.GL_FRAMEBUFFER_COMPLETE) {
                 throw new RuntimeException("Framebuffer not complete, status=" + status);
-            }
+            }*/
 
             // Switch back to the default framebuffer.
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
@@ -332,7 +334,9 @@ public class ScreenRecordActivity extends Activity implements SurfaceHolder.Call
 
         public void setRecordingEnabled(boolean enabled) {
             MyLog.logd(TAG, "setRecordingEnabled enabled:"+enabled);
-
+            mEglCore = new EGLCore(decoderCore.eglContext, EGLCore.FLAG_TRY_GLES3 | EGLCore.FLAG_RECORDABLE);
+            prepareGl(mSurfaceHolder.getSurface());
+            prepareFramebuffer(mSurfaceWidth, mSurfaceHeight);
             if(enabled) {
                 startEncoder();
             } else {
@@ -391,6 +395,8 @@ public class ScreenRecordActivity extends Activity implements SurfaceHolder.Call
                     GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);     //  clear pixels outside rect
                     GLES20.glViewport(mVideoRect.left, mVideoRect.top,
                             mVideoRect.width(), mVideoRect.height());
+                    mFullScreen = new FullFrameRect(
+                            new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_2D));
                     mFullScreen.drawFrame(mOffscreenTexture, mIdentityMatrix);
                     // mInputWindowSurface.setPresentationTime(timeStampNanos);
                     mInputWindowSurface.swapBuffers();

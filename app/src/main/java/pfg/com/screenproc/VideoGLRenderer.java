@@ -33,9 +33,9 @@ import javax.microedition.khronos.opengles.GL10;
  * Created by FPENG3 on 2018/7/30.
  */
 
-public class GLVideoRenderer implements GLSurfaceView.Renderer
+public class VideoGLRenderer implements IRenderer
         , SurfaceTexture.OnFrameAvailableListener, MediaPlayer.OnVideoSizeChangedListener {
-    private static final String TAG = "GLVideoRenderer";
+    private static final String TAG = "VideoGLRenderer";
     private Context context;
     private int aPositionLocation;
     private int programId;
@@ -78,7 +78,7 @@ public class GLVideoRenderer implements GLSurfaceView.Renderer
 
     private GLSurfaceView mGLSurfaceView;
 
-    public GLVideoRenderer(Context context, GLSurfaceView glSurfaceView, String videoPath) {
+    public VideoGLRenderer(Context context, GLSurfaceView glSurfaceView, String videoPath) {
         this.context = context;
         playerPrepared = false;
         mGLSurfaceView = glSurfaceView;
@@ -265,12 +265,24 @@ public class GLVideoRenderer implements GLSurfaceView.Renderer
         return mediaPlayer;
     }
 
+    @Override
     public void startRecord(EGLContext eglContext) {
         MyLog.logd(TAG,"startRecord---eglContext(eglGetCurrentContext): "+eglContext+" threadid: "+Thread.currentThread().getId());
         mVideoEncoder.startRecording(eglContext);
     }
 
+    @Override
+    public void startRecord() {
+        // do nothing
+    }
+
+    @Override
     public void stopRecord() {
         mVideoEncoder.stopRecording();
+    }
+
+    @Override
+    public void shutdown() {
+        stopRecord();
     }
 }

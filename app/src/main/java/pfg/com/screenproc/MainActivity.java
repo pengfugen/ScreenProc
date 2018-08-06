@@ -41,7 +41,7 @@ public class MainActivity extends Activity{
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent();
-                intent.setClassName("pfg.com.screenproc", "pfg.com.screenproc.ScreenRecordActivity");
+                intent.setClassName("pfg.com.screenproc", "pfg.com.screenproc.FBOActivity");
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
             }

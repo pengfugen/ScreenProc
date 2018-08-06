@@ -59,15 +59,17 @@ import pfg.com.screenproc.util.MyLog;
  * TODO: tweak the API (esp. textureId) so it's less awkward for simple use cases.
  */
 public class VideoEncoder implements Runnable {
-    private static final String TAG = "TextureMovieEncoder";
+    private static final String TAG = "VideoEncoderThread";
     private static final boolean VERBOSE = false;
 
     private static final int MSG_START_RECORDING = 0;
+    // private static final int MSG_START_RECORDING_NO_PARAM = 0;
     private static final int MSG_STOP_RECORDING = 1;
     private static final int MSG_FRAME_AVAILABLE = 2;
     private static final int MSG_SCREEN_FRAME_AVAILABLE = 3;
     private static final int MSG_SET_TEXTURE_ID = 4;
     private static final int MSG_QUIT = 5;
+    private static final int MSG_START_RECORDING_NO_PARAM = 6;
 
     // ----- accessed exclusively by encoder thread -----
     private WindowSurface mInputWindowSurface;
@@ -86,7 +88,7 @@ public class VideoEncoder implements Runnable {
     private int mWidth;
     private int mHeight;
     private String mFilePath;
-    private VideoEncoderCore mEncoderCore;
+    //private VideoEncoderCore mEncoderCore;
 
 
     public VideoEncoder(int width, int height, String filePath) {
@@ -96,22 +98,7 @@ public class VideoEncoder implements Runnable {
     }
 
     public VideoEncoder(VideoEncoderCore encoderCore) {
-        mEncoderCore = encoderCore;
-        synchronized (mReadyFence) {
-            if (mRunning) {
-                MyLog.logd(TAG, "Encoder thread already running");
-                return;
-            }
-            mRunning = true;
-            new Thread(this, "VideoEncoder").start();
-            while (!mReady) {
-                try {
-                    mReadyFence.wait();
-                } catch (InterruptedException ie) {
-                    // ignore
-                }
-            }
-        }
+        mVideoEncoder = encoderCore;
     }
 
     /**
@@ -123,7 +110,7 @@ public class VideoEncoder implements Runnable {
      * encoder may not yet be fully configured.
      */
     public void startRecording(EGLContext eglContext) {
-        MyLog.logd(TAG, "Encoder: startRecording()");
+        MyLog.logd(TAG, "Encoder: startRecording(eglContext)");
         synchronized (mReadyFence) {
             if (mRunning) {
                 MyLog.logd(TAG, "Encoder thread already running");
@@ -143,6 +130,27 @@ public class VideoEncoder implements Runnable {
         mHandler.sendMessage(mHandler.obtainMessage(MSG_START_RECORDING, eglContext));
     }
 
+    public void startRecording() {
+        MyLog.logd(TAG, "Encoder: startRecording()");
+        synchronized (mReadyFence) {
+            if (mRunning) {
+                MyLog.logd(TAG, "Encoder thread already running");
+                return;
+            }
+            mRunning = true;
+            new Thread(this, "VideoEncoder").start();
+            while (!mReady) {
+                try {
+                    mReadyFence.wait();
+                } catch (InterruptedException ie) {
+                    // ignore
+                }
+            }
+        }
+
+        mHandler.sendMessage(mHandler.obtainMessage(MSG_START_RECORDING_NO_PARAM));
+    }
+
     /**
      * Tells the video recorder to stop recording.  (Call from non-encoder thread.)
      * <p>
@@ -153,6 +161,7 @@ public class VideoEncoder implements Runnable {
      * has completed).
      */
     public void stopRecording() {
+        mHandler.removeMessages(MSG_FRAME_AVAILABLE);
         mHandler.sendMessage(mHandler.obtainMessage(MSG_STOP_RECORDING));
         mHandler.sendMessage(mHandler.obtainMessage(MSG_QUIT));
         // We don't know when these will actually finish (or even start).  We don't want to
@@ -281,6 +290,9 @@ public class VideoEncoder implements Runnable {
                 case MSG_START_RECORDING:
                     encoder.handleStartRecording((EGLContext) obj);
                     break;
+                case MSG_START_RECORDING_NO_PARAM:
+
+                    break;
                 case MSG_STOP_RECORDING:
                     encoder.handleStopRecording();
                     break;
@@ -312,6 +324,7 @@ public class VideoEncoder implements Runnable {
         mFrameNum = 0;
         prepareEncoder(eglContext);
     }
+
 
     /**
      * Handles notification of an available frame.

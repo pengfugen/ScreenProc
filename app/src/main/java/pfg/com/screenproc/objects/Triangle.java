@@ -22,6 +22,7 @@ import java.nio.FloatBuffer;
 import android.opengl.GLES30;
 
 import pfg.com.screenproc.MyGLRenderer;
+import pfg.com.screenproc.util.GlUtil;
 
 /**
  * A two-dimensional triangle for use as a drawn object in OpenGL ES 2.0.
@@ -57,14 +58,14 @@ public class Triangle {
     static final int COORDS_PER_VERTEX = 3;
     static float triangleCoords[] = {
             // in counterclockwise order:
-            0.0f,  0.622008459f, 0.0f,   // top
-           -0.5f, -0.311004243f, 0.0f,   // bottom left
-            0.5f, -0.311004243f, 0.0f    // bottom right
+           -0.5f, -0.25f, 0.0f,   // top
+            0.5f, -0.25f, 0.0f,   // bottom left
+            0.0f,  0.559016994f, 0.0f    // bottom right
     };
     private final int vertexCount = triangleCoords.length / COORDS_PER_VERTEX;
     private final int vertexStride = COORDS_PER_VERTEX * 4; // 4 bytes per vertex
 
-    float color[] = { 0.63671875f, 0.76953125f, 0.22265625f, 0.0f };
+    float color[] = { 0.6f, 0.7f, 0.2f, 0.0f };
 
     /**
      * Sets up the drawing object data for use in an OpenGL ES context.
@@ -106,38 +107,44 @@ public class Triangle {
     public void draw(float[] mvpMatrix) {
         // Add program to OpenGL environment
         GLES30.glUseProgram(mProgram);
+        GlUtil.checkGlError("glUseProgram");
 
         // get handle to vertex shader's vPosition member
         mPositionHandle = GLES30.glGetAttribLocation(mProgram, "vPosition");
-
+        GlUtil.checkGlError("glGetAttribLocation");
         // Enable a handle to the triangle vertices
         GLES30.glEnableVertexAttribArray(mPositionHandle);
+        GlUtil.checkGlError("glEnableVertexAttribArray");
 
         // Prepare the triangle coordinate data
         GLES30.glVertexAttribPointer(
                 mPositionHandle, COORDS_PER_VERTEX,
                 GLES30.GL_FLOAT, false,
                 vertexStride, vertexBuffer);
+        GlUtil.checkGlError("glVertexAttribPointer");
 
         // get handle to fragment shader's vColor member
         mColorHandle = GLES30.glGetUniformLocation(mProgram, "vColor");
+        GlUtil.checkGlError("glGetUniformLocation");
 
         // Set color for drawing the triangle
         GLES30.glUniform4fv(mColorHandle, 1, color, 0);
+        GlUtil.checkGlError("glUniform4fv");
 
         // get handle to shape's transformation matrix
         mMVPMatrixHandle = GLES30.glGetUniformLocation(mProgram, "uMVPMatrix");
-        MyGLRenderer.checkGlError("glGetUniformLocation");
+        GlUtil.checkGlError("glGetUniformLocation");
 
         // Apply the projection and view transformation
         GLES30.glUniformMatrix4fv(mMVPMatrixHandle, 1, false, mvpMatrix, 0);
-        MyGLRenderer.checkGlError("glUniformMatrix4fv");
+        GlUtil.checkGlError("glUniformMatrix4fv");
 
         // Draw the triangle
         GLES30.glDrawArrays(GLES30.GL_TRIANGLES, 0, vertexCount);
 
         // Disable vertex array
         GLES30.glDisableVertexAttribArray(mPositionHandle);
+        GLES30.glUseProgram(0);
     }
 
 }

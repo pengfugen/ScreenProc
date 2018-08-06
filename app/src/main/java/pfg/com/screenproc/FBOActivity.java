@@ -3,22 +3,18 @@ package pfg.com.screenproc;
 import android.app.Activity;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
-import android.os.Environment;
 import android.view.View;
 import android.widget.Button;
 
 /**
- * Created by FPENG3 on 2018/7/30.
+ * Created by FPENG3 on 2018/8/3.
  */
 
-public class OpenGLVideoPlayer extends Activity implements View.OnClickListener{
-
-    private final static String TAG = "OpenGLVideoPlayer";
-
+public class FBOActivity extends Activity implements View.OnClickListener{
     VideoGLSurfaceView mSurfaceView;
-    VideoGLRenderer mRenderer;
+    FBORenderer mRenderer;
     Button btn_record;
-    private static final String VIDEO_FILE_PATH = Environment.getExternalStorageDirectory()+"/"+"test.mp4";
+
     boolean isRecording = false;
 
     @Override
@@ -26,12 +22,12 @@ public class OpenGLVideoPlayer extends Activity implements View.OnClickListener{
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_video);
         mSurfaceView = (VideoGLSurfaceView) findViewById(R.id.surface_view);
+        mRenderer = new FBORenderer(this, mSurfaceView);
 
-        mRenderer = new VideoGLRenderer(this, mSurfaceView, VIDEO_FILE_PATH);
         mSurfaceView.setRenderer(mRenderer);
 
-        // Render the view only when there is a change in the drawing data
-        mSurfaceView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+        mSurfaceView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
+
     }
 
     @Override
@@ -63,7 +59,7 @@ public class OpenGLVideoPlayer extends Activity implements View.OnClickListener{
         isRecording = !isRecording;
         if(isRecording) {
             btn_record.setText("Stop Record");
-            mSurfaceView.startRecord(true);
+            mSurfaceView.startRecord(false);
         } else {
             btn_record.setText("Start Record");
             mSurfaceView.stopRecord();
