@@ -2,6 +2,7 @@ package pfg.com.screenproc;
 
 import android.content.Context;
 import android.graphics.SurfaceTexture;
+import android.opengl.EGL14;
 import android.opengl.EGLContext;
 import android.opengl.GLES20;
 import android.opengl.GLES30;
@@ -48,16 +49,18 @@ public class FBORenderer implements IRenderer{
     static private float [] modelMatrix = new float[16];
 
     // Used for off-screen rendering.
-    private int mOffscreenTexture;
+    static private int mOffscreenTexture;
     private int mFramebuffer;
     private int mDepthBuffer;
-    private FullFrameRect mFullScreen;
+    static private FullFrameRect mFullScreen;
     private Triangle mTriangle;
     static private int mWidth, mHeight;
 
     private HandlerThread mHanderThread;
     private RecordHandler mRecordHandler;
     boolean isStoped = false;
+
+    static private EGLContext mEGLContext;
 
     public FBORenderer(Context context, VideoGLSurfaceView glSurfaceView) {
         mGLSurfaceView = glSurfaceView;
@@ -70,7 +73,7 @@ public class FBORenderer implements IRenderer{
         mHanderThread.start();
         mTriangle = new Triangle();
         mRecordHandler = new RecordHandler(mHanderThread.getLooper());
-
+        mEGLContext = EGL14.eglGetCurrentContext();
     }
 
     @Override
@@ -89,30 +92,31 @@ public class FBORenderer implements IRenderer{
     @Override
     public void onDrawFrame(GL10 gl10) {
         MyLog.logd(TAG, "onDrawFrame");
-        //GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, mFramebuffer);
-        //GlUtil.checkGlError("glBindFramebuffer");
+        // 方法1
+        /*draw();
+        if(!isStoped) {
+            mRecordHandler.sendEmptyMessage(MSG_FRAME_AVAILABLE);
+        }*/
 
+
+        // 方法2
+        // 线程直接共享mOffscreenTexture(注意创建EGLCore时要传入shareContext)，这里的draw应该是描化到了mFramebuffer
         // 在opengl这块不用上面的FrameBuffer和OffScreen方式也可以渲染显示，
         // 那么这里的区别是什么？他们分别是把图像画到哪里去了？
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, mFramebuffer);
+        GlUtil.checkGlError("glBindFramebuffer");
         draw();
 
-        // Blit to display.
-        /*GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
-        GlUtil.checkGlError("glBindFramebuffer");
-        mFullScreen.drawFrame(mOffscreenTexture, mIdentityMatrix);*/
 
+        // Blit to display.
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+        GlUtil.checkGlError("glBindFramebuffer");
+        mFullScreen.drawFrame(mOffscreenTexture, mIdentityMatrix);
         if(!isStoped) {
             mRecordHandler.sendEmptyMessage(MSG_FRAME_AVAILABLE);
         }
 
-        // Blit to display.
-        //GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
-        //GlUtil.checkGlError("glBindFramebuffer");
-        //mFullScreen.drawFrame(mOffscreenTexture, mIdentityMatrix);
-
     }
-
-
 
     public static class RecordHandler extends Handler {
 
@@ -123,9 +127,6 @@ public class FBORenderer implements IRenderer{
         public static final int MSG_SHUT_DOWN = 4;
 
         private FullFrameRect mRecordFullScreen;
-        private int mRecordOffscreenTexture;
-        private int mRecordFramebuffer;
-        private int mRecordDepthBuffer;
         private Triangle mRecordTriangle;
 
         EGLCore mEglCore;
@@ -163,78 +164,14 @@ public class FBORenderer implements IRenderer{
 
         public void prepareEncoder() {
             mEncoderCore = new VideoEncoderCore(mWidth, mHeight, VIDEO_FILE_PATH);
-            mEglCore = new EGLCore(null, EGLCore.FLAG_TRY_GLES3 | EGLCore.FLAG_RECORDABLE);
+            // 方法1
+            // mEglCore = new EGLCore(null, EGLCore.FLAG_TRY_GLES3 | EGLCore.FLAG_RECORDABLE);
+
+            // 方法2
+            mEglCore = new EGLCore(mEGLContext, EGLCore.FLAG_TRY_GLES3 | EGLCore.FLAG_RECORDABLE);
+
             mInputSurface = new WindowSurface(mEglCore, mEncoderCore.getInputSurface(), false);
             mInputSurface.makeCurrent();
-        }
-
-        public void prepareRecordFramebuffer(int width, int height) {
-
-            MyLog.logd(TAG, "prepareRecordFramebuffer width:"+width+" height:"+height);
-            GlUtil.checkGlError("prepareRecordFramebuffer start");
-
-            int[] values = new int[1];
-
-            // Create a texture object and bind it.  This will be the color buffer.
-            GLES20.glGenTextures(1, values, 0);
-            GlUtil.checkGlError("glGenTextures");
-            mRecordOffscreenTexture = values[0];   // expected > 0
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mRecordOffscreenTexture);
-            GlUtil.checkGlError("glBindTexture " + mRecordOffscreenTexture);
-
-            // Create texture storage.
-            GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, width, height, 0,
-                    GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null);
-
-            // Set parameters.  We're probably using non-power-of-two dimensions, so
-            // some values may not be available for use.
-            GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER,
-                    GLES20.GL_NEAREST);
-            GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER,
-                    GLES20.GL_LINEAR);
-            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S,
-                    GLES20.GL_CLAMP_TO_EDGE);
-            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T,
-                    GLES20.GL_CLAMP_TO_EDGE);
-            GlUtil.checkGlError("glTexParameter");
-
-            // Create framebuffer object and bind it.
-            GLES20.glGenFramebuffers(1, values, 0);
-            GlUtil.checkGlError("glGenFramebuffers");
-            mRecordFramebuffer = values[0];    // expected > 0
-            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, mRecordFramebuffer);
-            GlUtil.checkGlError("glBindFramebuffer " + mRecordFramebuffer);
-
-            // Create a depth buffer and bind it.
-            GLES20.glGenRenderbuffers(1, values, 0);
-            GlUtil.checkGlError("glGenRenderbuffers");
-            mRecordDepthBuffer = values[0];    // expected > 0
-            GLES20.glBindRenderbuffer(GLES20.GL_RENDERBUFFER, mRecordDepthBuffer);
-            GlUtil.checkGlError("glBindRenderbuffer " + mRecordDepthBuffer);
-
-            // Allocate storage for the depth buffer.
-            GLES20.glRenderbufferStorage(GLES20.GL_RENDERBUFFER, GLES20.GL_DEPTH_COMPONENT16,
-                    width, height);
-            GlUtil.checkGlError("glRenderbufferStorage");
-
-            // Attach the depth buffer and the texture (color buffer) to the framebuffer object.
-            GLES20.glFramebufferRenderbuffer(GLES20.GL_FRAMEBUFFER, GLES20.GL_DEPTH_ATTACHMENT,
-                    GLES20.GL_RENDERBUFFER, mRecordDepthBuffer);
-            GlUtil.checkGlError("glFramebufferRenderbuffer");
-            GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0,
-                    GLES20.GL_TEXTURE_2D, mRecordOffscreenTexture, 0);
-            GlUtil.checkGlError("glFramebufferTexture2D");
-
-            // See if GLES is happy with all this.
-            int status = GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER);
-            if (status != GLES20.GL_FRAMEBUFFER_COMPLETE) {
-                throw new RuntimeException("Framebuffer not complete, status=" + status);
-            }
-
-            // Switch back to the default framebuffer.
-            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
-
-            GlUtil.checkGlError("prepareFramebuffer done");
         }
 
         private void startRecord() {
@@ -252,12 +189,45 @@ public class FBORenderer implements IRenderer{
             Looper.myLooper().quit();
         }
 
+        private void frameAvailable() {
+            if(mEncoder != null) {
+                // 方法1
+                /*
+                mEncoder.frameAvailableSoon();
+
+                if(mRecordFullScreen == null) {
+                    mRecordFullScreen = new FullFrameRect(
+                            new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_2D));
+                }
+                if(mRecordTriangle == null) {
+                    mRecordTriangle = new Triangle();
+                }
+
+                GLES20.glClearColor(0f, 0f, 0f, 1f);
+                GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+
+                GLES20.glViewport(0, 0, mWidth, mHeight);
+                drawRecord();
+                // mInputWindowSurface.setPresentationTime(timeStampNanos);
+
+                mInputSurface.swapBuffers();
+                */
+
+                // 方法2
+                mEncoder.frameAvailableSoon();
+                GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);    // again, only really need to
+                GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);                 //  clear pixels outside rect
+                GLES20.glViewport(0, 0, mWidth, mHeight);
+                mFullScreen.drawFrame(mOffscreenTexture, mIdentityMatrix);
+                mInputSurface.swapBuffers();
+            }
+        }
+
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case MSG_PREPARE_WORK:
                     prepareEncoder();
-                    //prepareRecordFramebuffer(mWidth, mHeight);
                     break;
                 case MSG_START_RECORD:
                     startRecord();
@@ -269,29 +239,7 @@ public class FBORenderer implements IRenderer{
                     shutdown();
                     break;
                 case MSG_FRAME_AVAILABLE:
-                    if(mEncoder != null) {
-                        mEncoder.frameAvailableSoon();
-
-                        if(mRecordFullScreen == null) {
-                            mRecordFullScreen = new FullFrameRect(
-                                    new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_2D));
-                        }
-                        if(mRecordTriangle == null) {
-                            mRecordTriangle = new Triangle();
-                        }
-
-                        GLES20.glClearColor(0f, 0f, 0f, 1f);
-                        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
-
-                        GLES20.glViewport(0, 0, mWidth, mHeight);
-                        /*GLES20.glEnable(GLES20.GL_SCISSOR_TEST);
-                        GLES20.glScissor(0, 0, mWidth, mHeight);*/
-                        drawRecord();
-                        //mRecordFullScreen.drawFrame(mRecordOffscreenTexture, mIdentityMatrix);
-                        //GLES20.glDisable(GLES20.GL_SCISSOR_TEST);
-                        // mInputWindowSurface.setPresentationTime(timeStampNanos);
-                        mInputSurface.swapBuffers();
-                    }
+                    frameAvailable();
                     break;
                 default:
                     break;
