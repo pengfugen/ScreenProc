@@ -34,4 +34,5 @@ GLSurfaceView、Opengl、SurfaceTexture
 2 . 在同一个线程中eglGetCurrentContext和eglCreateContext得到的EGLContext有什么区别？
 
 # 参考：
-[Android系统图形栈OpenGLES和EGL介绍](https://woshijpf.github.io/android/2017/09/04/Android%E7%B3%BB%E7%BB%9F%E5%9B%BE%E5%BD%A2%E6%A0%88OpenGLES%E5%92%8CEGL%E4%BB%8B%E7%BB%8D.html)
+[Android系统图形栈OpenGLES和EGL介绍](https://woshijpf.github.io/android/2017/09/04/Android%E7%B3%BB%E7%BB%9F%E5%9B%BE%E5%BD%A2%E6%A0%88OpenGLES%E5%92%8CEGL%E4%BB%8B%E7%BB%8D.html)  
+[SurfaceFlinger中Buffer的创建与显示](https://www.jianshu.com/p/af5858c06d5d)
