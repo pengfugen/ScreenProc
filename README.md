@@ -11,7 +11,8 @@ GLSurfaceView、Opengl、SurfaceTexture
 > 而且EGLContext和线程一一对应，线程之间可以共享EGLContext。  
 > GLSurfaceView已经为我们创建好了EGL上下文运行环境。  
 > 在使用OpenGL命令(如createProgram等)前需要确定EGL的环境(即EGLContext创建和EGLContext与EGLSurface建立联系(使用makeCurrent)。  
-> 弄清楚不同线程之间是否共享等问题  
+> 线程之间共享了EGLContext也就可以可以共享Program以及TextureID等等。  
+> 
 
 # 使用EGL的绘图的一般步骤：
 1 .  获取 EGL Display对象：eglGetDisplay()  
