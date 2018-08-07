@@ -43,8 +43,8 @@ public class FBORenderer implements IRenderer{
 
     private VideoGLSurfaceView mGLSurfaceView;
 
-    static private final float[] mIdentityMatrix = new float[16];
-    static private float [] mDisplayProjectionMatrix = new float[16];
+    static private float[] mIdentityMatrix = new float[16];
+    static private float[] mDisplayProjectionMatrix = new float[16];
     // 初始化单位矩阵
     static private float [] modelMatrix = new float[16];
 
@@ -59,6 +59,8 @@ public class FBORenderer implements IRenderer{
     private HandlerThread mHanderThread;
     private RecordHandler mRecordHandler;
     boolean isStoped = false;
+    private static float mAngle;
+    static int mSmallDim;
 
     static private EGLContext mEGLContext;
 
@@ -86,7 +88,11 @@ public class FBORenderer implements IRenderer{
 
         Matrix.setIdentityM(mIdentityMatrix, 0);
 
-        mRecordHandler.sendMessage(mRecordHandler.obtainMessage(RecordHandler.MSG_PREPARE_WORK));
+        mSmallDim = Math.min(width, height);
+
+        // 解决下一次开启录制时挂掉的问题
+        // 原因开启新的录制时重新开启一个线程这时需要重新与sharedContext绑定并创建新的EGLCore等对象
+        // mRecordHandler.sendMessage(mRecordHandler.obtainMessage(RecordHandler.MSG_PREPARE_WORK));
     }
 
     @Override
@@ -134,6 +140,7 @@ public class FBORenderer implements IRenderer{
         private FullFrameRect mRecordFullScreen;
         private Triangle mRecordTriangle;
 
+
         EGLCore mEglCore;
         WindowSurface mInputSurface;
         VideoEncoder mEncoder;
@@ -173,6 +180,7 @@ public class FBORenderer implements IRenderer{
             // mEglCore = new EGLCore(null, EGLCore.FLAG_TRY_GLES3 | EGLCore.FLAG_RECORDABLE);
 
             // 方法2
+            //
             mEglCore = new EGLCore(mEGLContext, EGLCore.FLAG_TRY_GLES3 | EGLCore.FLAG_RECORDABLE);
 
             mInputSurface = new WindowSurface(mEglCore, mEncoderCore.getInputSurface(), false);
@@ -261,6 +269,7 @@ public class FBORenderer implements IRenderer{
     @Override
     public void startRecord() {
         MyLog.logd(TAG, "startRecord()");
+        mRecordHandler.sendMessage(mRecordHandler.obtainMessage(RecordHandler.MSG_PREPARE_WORK));
         mRecordHandler.sendMessage(mRecordHandler.obtainMessage(MSG_START_RECORD));
 
         isStoped = false;
@@ -369,7 +378,7 @@ public class FBORenderer implements IRenderer{
     }
 
     private static void draw() {
-        //GLES20.glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+        GLES20.glClearColor(0f, 0f, 0f, 1.0f);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
 
         MatrixHelper.perspectiveM(mDisplayProjectionMatrix, 45, (float) mWidth / (float) mHeight, 1f, 10f);
@@ -379,16 +388,37 @@ public class FBORenderer implements IRenderer{
         // 沿着Z轴平移-2.5f, 这样在-1到-10范围内所以画面就可见了。
         Matrix.translateM(modelMatrix, 0, 0f, 0f, -2.5f);
 
-        long time = SystemClock.uptimeMillis() % 1000L;
-        float angleInDegree = (360.0f / 1000.0f ) * ((int)time);
+        setRotation();
 
-        Matrix.rotateM(modelMatrix, 0, angleInDegree, 0f, 0f, 1f);
+        Matrix.rotateM(modelMatrix, 0, mAngle, 0f, 0f, 1f);
+
+        Matrix.scaleM(modelMatrix, 0, 0.6f, 0.6f, 1.0f);
 
         float [] temp = new float[16];
         Matrix.multiplyMM(temp, 0, mDisplayProjectionMatrix, 0, modelMatrix, 0);
         System.arraycopy(temp, 0, mDisplayProjectionMatrix, 0, temp.length);
 
         mTriangle.draw(mDisplayProjectionMatrix);
+    }
+
+    public static void setRotation() {
+        final float ONE_BILLION_F = 50000000000.0f;
+        final float elapsedSeconds = SystemClock.elapsedRealtime() / ONE_BILLION_F;
+
+        // Spin the triangle.  We want one full 360-degree rotation every 3 seconds,
+        // or 120 degrees per second.
+        final int SECS_PER_SPIN = 3;
+        float angleDelta = (360.0f / SECS_PER_SPIN) * elapsedSeconds;
+        MyLog.logd(TAG, "elapsedSeconds:"+elapsedSeconds+" angleDelta:"+angleDelta);
+        // Normalize.  We're not expecting it to be way off, so just iterate.
+        float angle = mAngle + angleDelta;
+        while (angle >= 360.0f) {
+            angle -= 360.0f;
+        }
+        while (angle <= -360.0f) {
+            angle += 360.0f;
+        }
+        mAngle = angle;
     }
 
 

@@ -10,7 +10,7 @@ import android.opengl.EGLSurface;
 public abstract class EGLSurfaceBase {
 
     EGLCore mEglCore;
-    EGLSurface mEglSurface;
+    EGLSurface mEglSurface = EGL14.EGL_NO_SURFACE;
     private int mWidth = -1;
     private int mHeight = -1;
 
@@ -23,13 +23,14 @@ public abstract class EGLSurfaceBase {
         return mEglSurface;
     }
 
-    public void createOffscreenSurface(int width, int height) {
+    public EGLSurface createOffscreenSurface(int width, int height) {
         if (mEglSurface != EGL14.EGL_NO_SURFACE) {
             throw new IllegalStateException("surface already created");
         }
         mEglSurface = mEglCore.createOffscreenSurface(width, height);
         mWidth = width;
         mHeight = height;
+        return mEglSurface;
     }
 
     public void makeCurrent() {

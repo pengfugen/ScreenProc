@@ -18,6 +18,11 @@ public class WindowSurface extends EGLSurfaceBase {
         mSurface = surface;
     }
 
+    public WindowSurface(EGLCore eglCore, int width, int height) {
+        super(eglCore);
+        createOffscreenSurface(width, height);
+    }
+
     public WindowSurface(EGLCore eglCore, SurfaceTexture surfaceTexture) {
         super(eglCore);
         createWindowSurface(surfaceTexture);
