@@ -124,6 +124,7 @@ public class FBORenderer implements IRenderer{
         // 接着GLSurfaceView的GLRender线程会自动调用swapBuffer方法用于显示
 
         // 开始录制
+        // 这里一定要在新线程中来完成录制工作，因为上述draw需要swapBuffer显示在屏幕上
         if(!isStoped) {
             mRecordHandler.sendEmptyMessage(MSG_FRAME_AVAILABLE);
         }
