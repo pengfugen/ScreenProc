@@ -12,12 +12,13 @@ import android.widget.Button;
 import pfg.com.screenproc.util.MyLog;
 
 
-public class MainActivity extends Activity{
+public class OpenGLTestActivity extends Activity{
 
     final String TAG = "ScreenProc";
     MyGLSurfaceView mGLSurfaceView;
     Button btn_record;
     Button btn_video;
+    Button btn_video_dial;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,6 +54,17 @@ public class MainActivity extends Activity{
             public void onClick(View view) {
                 Intent intent = new Intent();
                 intent.setClassName("pfg.com.screenproc", "pfg.com.screenproc.OpenGLVideoPlayer");
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            }
+        });
+
+        btn_video_dial = (Button) findViewById(R.id.btn_go_video_dial);
+        btn_video_dial.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent();
+                intent.setClassName("pfg.com.screenproc", "pfg.com.screenproc.VideoDialActivity");
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
             }

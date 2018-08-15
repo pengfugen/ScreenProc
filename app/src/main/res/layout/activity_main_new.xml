@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="pfg.com.screenproc.MainActivity"
+    tools:context="pfg.com.screenproc.OpenGLTestActivity"
     android:orientation="vertical">
     <pfg.com.screenproc.MyGLSurfaceView
         android:id="@+id/surface_view"
@@ -15,19 +15,29 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:gravity="center_horizontal"
+        android:layout_marginStart="30dp"
         android:layout_marginTop="10dp"
-        android:layout_marginStart="40dp"
         android:orientation="horizontal">
+
         <Button
             android:id="@+id/btn_go_record"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Go screenrecord" />
+            android:text="Go screenrecord"
+            android:textSize="10sp" />
         <Button
             android:id="@+id/btn_go_video"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:textSize="10sp"
             android:text="Go videoplayer"
+            />
+        <Button
+            android:id="@+id/btn_go_video_dial"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="10sp"
+            android:text="Go videodialer"
             />
     </LinearLayout>
 
